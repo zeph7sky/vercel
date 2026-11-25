@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custom Portfolio Compounding Simulator</title>
+
+<style>
+  /* ---------- Colors (light + dark mode) ---------- */
+  :root {
+    --bg: #ffffff;
+    --panel: #f5f6f8;
+    --card: #ffffff;
+    --text: #1f2430;
+    --muted: #667085;
+    --border: #e1e4ea;
+    --accent: #2f6fed;
+    --accent-text: #ffffff;
+    --good: #12805c;
+    --bad: #c0392b;
+    --info-bg: #e8f1ff;
+    --info-text: #1a3d7c;
+    --warn-bg: #fff4e0;
+    --warn-text: #7a4b00;
+    --err-bg: #fdecea;
+    --err-text: #8a1c14;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1117;
+      --panel: #161b24;
+      --card: #1b212c;
+      --text: #e8eaf0;
+      --muted: #9aa3b2;
+      --border: #2b3340;
+      --accent: #5b8cff;
+      --accent-text: #0e1117;
+      --good: #4cc79a;
+      --bad: #ff7b6e;
+      --info-bg: #14263f;
+      --info-text: #a9c7ff;
+      --warn-bg: #3a2b0e;
+      --warn-text: #ffd48a;
+      --err-bg: #3a1714;
+      --err-text: #ffb4ab;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.45;
+  }
+
+  /* ---------- Layout: sidebar on the left, results on the right ---------- */
+  .app { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
+  .sidebar {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 20px 18px 28px;
+    overflow-y: auto;
+  }
+  .main { padding: 24px 28px 48px; min-width: 0; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    .main { padding: 18px 14px 40px; }
+  }
+
+  h1 { font-size: 1.7rem; margin: 0 0 4px; }
+  h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 22px 0 10px; }
+  h3 { font-size: 1.05rem; margin: 0 0 8px; }
+  .subtitle { color: var(--muted); margin: 0 0 18px; }
+
+  /* ---------- Form controls ---------- */
+  label { display: block; font-size: 0.85rem; margin-bottom: 4px; color: var(--muted); }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    font: inherit;
+  }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  /* No +/- spinner buttons on number boxes */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+  .field { margin-bottom: 12px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .fund-row { margin-bottom: 12px; }
+  .fund-row .fund-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+  .fund-line { display: grid; grid-template-columns: 1fr 86px; gap: 8px; }
+
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 14px; }
+  button {
+    font: inherit;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.primary {
+    width: 100%;
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+    font-weight: 600;
+    padding: 11px 10px;
+    margin-top: 6px;
+  }
+
+  .check { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9rem; color: var(--text); margin: 4px 0 6px; cursor: pointer; }
+  .check input { margin-top: 3px; }
+  .hint { font-size: 0.78rem; color: var(--muted); margin: 0 0 12px 24px; }
+
+  .total { font-size: 0.9rem; margin: 2px 0 10px; font-weight: 600; }
+  .total.ok { color: var(--good); }
+  .total.bad { color: var(--bad); }
+
+  /* ---------- Messages ---------- */
+  .msg { padding: 10px 14px; border-radius: 8px; margin: 0 0 12px; font-size: 0.92rem; }
+  .msg.info { background: var(--info-bg); color: var(--info-text); }
+  .msg.warn { background: var(--warn-bg); color: var(--warn-text); }
+  .msg.error { background: var(--err-bg); color: var(--err-text); }
+
+  /* ---------- Summary cards: two rows of four ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 1250px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 700px) { .kpis { grid-template-columns: 1fr; } }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+  .kpi .label { font-size: 0.85rem; color: var(--muted); margin: 0 0 4px; }
+  .kpi .value { font-size: 1.6rem; font-weight: 600; overflow-wrap: anywhere; }
+  .kpi .sub { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+  .kpi .sub.good { color: var(--good); }
+  .kpi .sub.bad { color: var(--bad); }
+
+  .caption { font-size: 0.82rem; color: var(--muted); margin: 6px 0 18px; }
+
+  /* ---------- Charts ---------- */
+  .charts { display: grid; grid-template-columns: 3fr 2fr; gap: 18px; margin-bottom: 18px; }
+  @media (max-width: 1100px) { .charts { grid-template-columns: 1fr; } }
+  .chart-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+  .chart { width: 100%; height: 380px; }
+
+  /* ---------- Ledger table ---------- */
+  details { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin-bottom: 18px; }
+  summary { cursor: pointer; font-weight: 600; }
+  .table-wrap { overflow: auto; max-height: 520px; margin-top: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; white-space: nowrap; }
+  th, td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: right; }
+  th { position: sticky; top: 0; background: var(--card); z-index: 1; }
+  th:first-child, td:first-child { text-align: left; }
+
+  .disclaimer { font-size: 0.78rem; color: var(--muted); }
+  .hidden { display: none; }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- ===================== LEFT: INPUTS ===================== -->
+  <aside class="sidebar">
+    <h2 style="margin-top:0">1. Investment Amounts &amp; Dates</h2>
+
+    <div class="field">
+      <label for="initial">Initial Starting Investment ($)</label>
+      <input type="number" id="initial" min="0" max="10000000" step="any" value="0" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label for="monthly">Monthly Contribution ($)</label>
+      <input type="number" id="monthly" min="0" max="100000" step="any" value="360" inputmode="decimal">
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="start">From (MM/YYYY)</label>
+        <select id="start"></select>
+      </div>
+      <div class="field">
+        <label for="end">To (MM/YYYY)</label>
+        <select id="end"></select>
+      </div>
+    </div>
+
+    <h2>2. Choose Funds &amp; Allocation (%)</h2>
+    <p class="hint" style="margin-left:0">Click a fund box and type a ticker or keyword (e.g. <i>Vanguard</i>, <i>Tech</i>, <i>Gold</i>) to search.</p>
+
+    <div id="fund-rows"></div>
+    <datalist id="etf-list"></datalist>
+
+    <div id="total" class="total"></div>
+
+    <div class="btn-row">
+      <button type="button" id="add-fund">➕ Add Fund</button>
+      <button type="button" id="remove-fund">➖ Remove</button>
+    </div>
+
+    <label class="check">
+      <input type="checkbox" id="rebalance" checked>
+      <span>Rebalance every December to my target %</span>
+    </label>
+    <p class="hint">Resets each fund to its target % of the total at the end of each December. Assumes no trading costs or taxes.</p>
+
+    <button type="button" id="run" class="primary">Run simulation</button>
+  </aside>
+
+  <!-- ===================== RIGHT: RESULTS ===================== -->
+  <main class="main">
+    <h1>📈 Custom Portfolio Compounding Simulator</h1>
+    <p class="subtitle">Search from 100+ pre-2006 ETFs, set your allocations, and see how compounding and fund fees impact your growth.</p>
+
+    <div id="status"></div>
+    <div id="notices"></div>
+
+    <div id="results" class="hidden">
+      <div class="kpis" id="kpis-row1"></div>
+      <div class="kpis" id="kpis-row2"></div>
+      <div class="caption" id="rebalance-caption"></div>
+
+      <div class="charts">
+        <div class="chart-box">
+          <h3>Month-by-Month Compound Growth (Net of Fees)</h3>
+          <div id="chart-growth" class="chart"></div>
+        </div>
+        <div class="chart-box">
+          <h3>Ending Allocation Mix</h3>
+          <div id="chart-mix" class="chart"></div>
+        </div>
+      </div>
+
+      <details id="ledger">
+        <summary id="ledger-title">View Full Month-by-Month Compounding Ledger</summary>
+        <div class="table-wrap"><table id="ledger-table"></table></div>
+      </details>
+
+      <p class="disclaimer">
+        Returns come from Yahoo Finance monthly prices adjusted for dividends and splits, so they are total returns
+        that already include each fund's real fees. Deposits are made at the start of each month, and the current
+        (incomplete) month is excluded. The fee-drag figure is only an estimate: it adds back each fund's CURRENT
+        expense ratio for every month, but many funds charged more in the past. Annualized volatility is the standard
+        deviation of monthly portfolio returns times the square root of 12 (past variability, not a forecast).
+        Annualized growth rate and biggest drop are based on month-end values and adjusted for your deposits.
+        When rebalancing is on, funds are reset to your target % each December with no trading costs or taxes.
+        For educational purposes only. Historical returns do not guarantee future results.
+      </p>
+    </div>
+  </main>
+</div>
+
+<!-- Plotly draws the charts (loaded from a CDN, pinned to one version) -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+
+<script>
+/* =====================================================================================
+   SETTINGS - the only line you normally need to change
+   ===================================================================================== */
+// Address of your API on Render (no slash at the end), e.g. "https://portfolio-api.onrender.com"
+const API_URL = "https://YOUR-API-NAME.onrender.com";
+
+const PALETTE = ["#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
+                 "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"];
+
+/* =====================================================================================
+   SMALL HELPERS
+   ===================================================================================== */
+const $ = (id) => document.getElementById(id);
+const money0 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const money2 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Build an element and set its TEXT (never raw HTML), so text from the server can't inject code.
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined && text !== null) node.textContent = text;
+  return node;
+}
+function monthLabel(isoDate) {            // "2010-02-01" -> "02/2010"
+  return isoDate.slice(5, 7) + "/" + isoDate.slice(0, 4);
+}
+
+/* =====================================================================================
+   STATE
+   ===================================================================================== */
+let MAX_FUNDS = 10;
+let labelToTicker = new Map();            // "VUG — Vanguard Growth ETF" -> "VUG"
+let tickerSet = new Set();
+let funds = [{ text: "", pct: 100 }];     // one row per fund: what's typed in the box + its %
+
+/* =====================================================================================
+   FUND ROWS (add / remove / search)
+   ===================================================================================== */
+function renderFundRows() {
+  const box = $("fund-rows");
+  box.replaceChildren();
+
+  funds.forEach((fund, i) => {
+    const row = el("div", "fund-row");
+    row.appendChild(el("div", "fund-title", "Fund " + (i + 1)));
+
+    const line = el("div", "fund-line");
+
+    const name = document.createElement("input");
+    name.type = "text";
+    name.setAttribute("list", "etf-list");           // gives the type-to-search dropdown
+    name.placeholder = "Search a ticker or name...";
+    name.autocomplete = "off";
+    name.value = fund.text;
+    name.setAttribute("aria-label", "ETF for fund " + (i + 1));
+    name.addEventListener("input", () => { fund.text = name.value; });
+
+    const pct = document.createElement("input");
+    pct.type = "number";
+    pct.min = "0"; pct.max = "100"; pct.step = "any";
+    pct.value = fund.pct;
+    pct.inputMode = "decimal";
+    pct.setAttribute("aria-label", "Allocation percent for fund " + (i + 1));
+    pct.addEventListener("input", () => {
+      fund.pct = parseFloat(pct.value) || 0;
+      updateTotal();
+    });
+
+    line.append(name, pct);
+    row.appendChild(line);
+    box.appendChild(row);
+  });
+
+  $("add-fund").disabled = funds.length >= MAX_FUNDS;
+  $("remove-fund").disabled = funds.length <= 1;
+  updateTotal();
+}
+
+function updateTotal() {
+  const total = Math.round(funds.reduce((s, f) => s + (f.pct || 0), 0) * 100) / 100;
+  const ok = Math.abs(total - 100) <= 0.005;
+  const node = $("total");
+  node.textContent = "Current Total: " + total + "%" + (ok ? " ✅" : "");
+  node.className = "total " + (ok ? "ok" : "bad");
+}
+
+// Turn what the user typed into a ticker (accepts the full "VUG — Vanguard Growth ETF" label or just "VUG").
+function resolveTicker(text) {
+  const t = text.trim();
+  if (!t) return null;
+  if (labelToTicker.has(t)) return labelToTicker.get(t);
+  const head = t.split("—")[0].trim().toUpperCase();
+  return tickerSet.has(head) ? head : null;
+}
+
+/* =====================================================================================
+   LOAD THE FUND LIST + MONTHS FROM THE API
+   ===================================================================================== */
+async function loadMeta() {
+  showStatus("Loading the fund list... (if the server was asleep this can take up to a minute)");
+  const res = await fetch(API_URL + "/funds");
+  if (!res.ok) throw new Error("Server answered " + res.status);
+  const data = await res.json();
+
+  MAX_FUNDS = data.max_funds || 10;
+
+  const list = $("etf-list");
+  list.replaceChildren();
+  data.funds.forEach((f) => {
+    labelToTicker.set(f.label, f.ticker);
+    tickerSet.add(f.ticker);
+    const opt = document.createElement("option");
+    opt.value = f.label;
+    list.appendChild(opt);
+  });
+
+  // From: "Auto" means "as early as every chosen fund allows".
+  const start = $("start");
+  start.replaceChildren();
+  const auto = document.createElement("option");
+  auto.value = ""; auto.textContent = "Earliest possible";
+  start.appendChild(auto);
+  data.months.forEach((m) => {
+    const o = document.createElement("option"); o.value = m; o.textContent = m; start.appendChild(o);
+  });
+
+  const end = $("end");
+  end.replaceChildren();
+  data.months.forEach((m) => {
+    const o = document.createElement("option"); o.value = m; o.textContent = m; end.appendChild(o);
+  });
+  end.value = data.months[data.months.length - 1];
+
+  // Row 1 starts on VUG (if it's in your list).
+  const vug = data.funds.find((f) => f.ticker === "VUG");
+  if (vug) funds[0].text = vug.label;
+  renderFundRows();
+  showStatus("");
+}
+
+/* =====================================================================================
+   MESSAGES
+   ===================================================================================== */
+function showStatus(text, kind) {
+  const box = $("status");
+  box.replaceChildren();
+  if (text) box.appendChild(el("div", "msg " + (kind || "info"), text));
+}
+function showNotices(list) {
+  const box = $("notices");
+  box.replaceChildren();
+  (list || []).forEach((t) => box.appendChild(el("div", "msg info", "ℹ️ " + t)));
+}
+
+/* =====================================================================================
+   RUN THE SIMULATION
+   ===================================================================================== */
+function collectInputs() {
+  const problems = [];
+  const initial = parseFloat($("initial").value) || 0;
+  const monthly = parseFloat($("monthly").value) || 0;
+
+  if (initial === 0 && monthly === 0) problems.push("Please enter at least $1 in either Initial Starting Investment or Monthly Contribution.");
+
+  const payloadFunds = [];
+  const seen = new Set();
+  funds.forEach((f, i) => {
+    if (!f.text.trim()) { problems.push("Please choose an ETF for Fund " + (i + 1) + ", or click Remove."); return; }
+    const ticker = resolveTicker(f.text);
+    if (!ticker) { problems.push("Fund " + (i + 1) + ": \"" + f.text.trim() + "\" isn't in the fund list. Pick one from the dropdown."); return; }
+    if (seen.has(ticker)) { problems.push("Duplicate fund: " + ticker + " is listed more than once."); return; }
+    seen.add(ticker);
+    payloadFunds.push({ ticker: ticker, pct: f.pct || 0 });
+  });
+
+  const total = Math.round(funds.reduce((s, f) => s + (f.pct || 0), 0) * 100) / 100;
+  if (Math.abs(total - 100) > 0.005) problems.push("Your allocation adds up to " + total + "%. It needs to equal 100%.");
+
+  return {
+    problems,
+    payload: {
+      initial, monthly,
+      start: $("start").value || null,
+      end: $("end").value || null,
+      rebalance: $("rebalance").checked,
+      funds: payloadFunds,
+    },
+  };
+}
+
+async function runSimulation() {
+  const { problems, payload } = collectInputs();
+  showNotices([]);
+  if (problems.length) {
+    const box = $("status");
+    box.replaceChildren();
+    problems.forEach((p) => box.appendChild(el("div", "msg error", "⚠️ " + p)));
+    $("results").classList.add("hidden");
+    return;
+  }
+
+  $("run").disabled = true;
+  showStatus("Running simulation...");
+  // A free Render server goes to sleep, so the first call can be slow. Say so after a few seconds.
+  const slowTimer = setTimeout(() => showStatus("Still working... the server may be waking up (this can take up to a minute the first time)."), 6000);
+
+  try {
+    const res = await fetch(API_URL + "/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(formatApiError(data, res.status));
+
+    showStatus("");
+    showNotices(data.notices);
+    renderResults(data);
+  } catch (err) {
+    $("results").classList.add("hidden");
+    showStatus("❌ " + err.message, "error");
+  } finally {
+    clearTimeout(slowTimer);
+    $("run").disabled = false;
+  }
+}
+
+function formatApiError(data, status) {
+  const d = data && data.detail;
+  if (typeof d === "string") return d;
+  if (Array.isArray(d)) return d.map((x) => (x.loc ? x.loc.slice(1).join(".") + ": " : "") + x.msg).join("; ");
+  return "The server returned an error (" + status + "). Please try again.";
+}
+
+/* =====================================================================================
+   DRAW THE RESULTS
+   ===================================================================================== */
+function kpiCard(label, value, sub, subClass, tooltip) {
+  const card = el("div", "kpi");
+  if (tooltip) card.title = tooltip;
+  card.appendChild(el("div", "label", label));
+  card.appendChild(el("div", "value", value));
+  if (sub) card.appendChild(el("div", "sub " + (subClass || ""), sub));
+  return card;
+}
+
+function renderResults(data) {
+  const k = data.kpis;
+  const months = data.period.months;
+  const monthsText = months + " month" + (months === 1 ? "" : "s");
+
+  // Row 1: the money numbers
+  const row1 = $("kpis-row1"); row1.replaceChildren();
+  row1.append(
+    kpiCard("Total Cash Invested", money0.format(k.total_invested)),
+    kpiCard("Ending Value (After Fees)", money0.format(k.ending_value)),
+    kpiCard("Total Compound Gains", money0.format(k.total_gain),
+            (k.gain_pct >= 0 ? "+" : "") + k.gain_pct.toFixed(1) + "%", k.gain_pct >= 0 ? "good" : "bad"),
+    kpiCard("Annualized Growth Rate",
+            k.annualized_growth_pct === null ? "N/A" : (k.annualized_growth_pct >= 0 ? "+" : "") + k.annualized_growth_pct.toFixed(1) + "%",
+            k.annualized_growth_pct === null ? "needs 12+ months" : "per year, after fees", null,
+            "The steady yearly growth rate (compounded) that would give the same total growth, after fees. " +
+            "It adjusts for when you made deposits, so it is not skewed by contributing more in good or bad years. " +
+            "Based on " + k.vol_months + " monthly returns. Shown only for periods of 12 months or longer.")
+  );
+
+  // Row 2: period, fees and risk
+  const row2 = $("kpis-row2"); row2.replaceChildren();
+  row2.append(
+    kpiCard("Investment Period (" + monthsText + ")", data.period.start + " - " + data.period.end),
+    kpiCard("Est. Fee Drag Over Time", "-" + money0.format(k.fee_drag), k.avg_fee_pct.toFixed(3) + "% avg fee"),
+    kpiCard("Annualized Volatility",
+            k.annualized_vol_pct === null ? "N/A" : k.annualized_vol_pct.toFixed(1) + "%", null, null,
+            "Standard deviation of the portfolio's monthly returns (after fees, adjusted for your deposits) " +
+            "multiplied by the square root of 12. Based on " + k.vol_months + " monthly returns. " +
+            "Higher means a bumpier ride. Needs at least 2 months of data."),
+    kpiCard("Biggest Drop (Max Drawdown)",
+            k.drawdown_peak === null ? "0.0%" : k.max_drawdown_pct.toFixed(1) + "%",
+            k.drawdown_peak === null ? "never fell below a prior high"
+              : "high " + k.drawdown_peak + " \u2192 low " + k.drawdown_trough, null,
+            "The largest fall in the portfolio's value from a previous high to a later low, measured on " +
+            "month-end values and adjusted for your deposits, so new contributions can't hide a loss. " +
+            "A dip inside a single month is not captured.")
+  );
+
+  // One-line reminder of the rebalancing setting
+  let reb;
+  if (data.tickers.length === 1) reb = "Rebalancing: not applicable (only one fund selected).";
+  else if (k.rebalance_on) reb = "Rebalancing: ON. Funds were reset to your target % at the end of each December (" +
+                                 k.rebalance_count + " time" + (k.rebalance_count === 1 ? "" : "s") + " in this period).";
+  else reb = "Rebalancing: OFF. Fund weights were left to drift with market performance.";
+  $("rebalance-caption").textContent = reb;
+
+  $("results").classList.remove("hidden");   // show BEFORE drawing so Plotly can measure the boxes
+  drawCharts(data);
+  drawLedger(data, monthsText);
+}
+
+function drawCharts(data) {
+  if (!window.Plotly) {
+    showStatus("The chart library didn't load. Check your internet connection and refresh.", "warn");
+    return;
+  }
+  const css = getComputedStyle(document.documentElement);
+  const textColor = css.getPropertyValue("--text").trim();
+  const gridColor = css.getPropertyValue("--border").trim();
+
+  const tickers = data.tickers;
+  const colors = tickers.map((_, i) => PALETTE[i % PALETTE.length]);
+  const dates = data.series.dates;
+
+  // Stacked area: one band per fund
+  const traces = tickers.map((t, i) => ({
+    x: dates, y: data.series.funds[t], name: t,
+    type: "scatter", mode: "lines", stackgroup: "one",
+    line: { width: 0.5, color: colors[i] },
+  }));
+  // Dashed line: cumulative cash put in
+  traces.push({
+    x: dates, y: data.series.total_invested, name: "Cumulative Cash Invested",
+    type: "scatter", mode: "lines", line: { color: textColor, dash: "dash", width: 2 },
+  });
+
+  const baseLayout = {
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: { color: textColor }, margin: { t: 10, r: 10, b: 40, l: 70 },
+  };
+  const config = { responsive: true, displayModeBar: false };
+
+  Plotly.newPlot("chart-growth", traces, Object.assign({}, baseLayout, {
+    hovermode: "x unified",
+    legend: { orientation: "h", y: -0.18 },
+    xaxis: { gridcolor: gridColor },
+    yaxis: { title: "Balance ($)", tickprefix: "$", separatethousands: true, gridcolor: gridColor },
+  }), config);
+
+  // Donut: ending balance by fund
+  Plotly.newPlot("chart-mix", [{
+    type: "pie", hole: 0.4,
+    labels: tickers, values: tickers.map((t) => data.ending_mix[t]),
+    marker: { colors: colors }, textinfo: "label+percent", sort: false,
+  }], Object.assign({}, baseLayout, { showlegend: true, margin: { t: 10, r: 10, b: 10, l: 10 } }), config);
+}
+
+function drawLedger(data, monthsText) {
+  $("ledger-title").textContent = "View Full Month-by-Month Compounding Ledger (" + monthsText + ")";
+
+  const s = data.series;
+  const cols = ["Date", "Total Invested", "Total Portfolio (Net)", "Pre-Fee Value (Gross)",
+                "Cumulative Fee Impact", "Portfolio Return (Month)", "Rebalanced?"].concat(data.tickers);
+
+  const table = $("ledger-table");
+  table.replaceChildren();
+
+  const head = document.createElement("tr");
+  cols.forEach((c) => head.appendChild(el("th", "", c)));
+  const thead = document.createElement("thead");
+  thead.appendChild(head);
+
+  const tbody = document.createElement("tbody");
+  s.dates.forEach((d, i) => {
+    const tr = document.createElement("tr");
+    tr.appendChild(el("td", "", monthLabel(d)));
+    tr.appendChild(el("td", "", money0.format(s.total_invested[i])));
+    tr.appendChild(el("td", "", money2.format(s.net_total[i])));
+    tr.appendChild(el("td", "", money2.format(s.gross_total[i])));
+    tr.appendChild(el("td", "", money2.format(s.fee_impact[i])));
+    tr.appendChild(el("td", "", s.monthly_return[i] === null ? "" : (s.monthly_return[i] * 100).toFixed(2) + "%"));
+    tr.appendChild(el("td", "", s.rebalanced[i] ? "Yes" : ""));
+    data.tickers.forEach((t) => tr.appendChild(el("td", "", money2.format(s.funds[t][i]))));
+    tbody.appendChild(tr);
+  });
+
+  table.append(thead, tbody);
+}
+
+/* =====================================================================================
+   START-UP: wire the buttons, then load the fund list and run once
+   ===================================================================================== */
+$("add-fund").addEventListener("click", () => {
+  if (funds.length < MAX_FUNDS) { funds.push({ text: "", pct: 0 }); renderFundRows(); }
+});
+$("remove-fund").addEventListener("click", () => {
+  if (funds.length > 1) { funds.pop(); renderFundRows(); }
+});
+$("run").addEventListener("click", runSimulation);
+
+renderFundRows();
+loadMeta()
+  .then(runSimulation)
+  .catch((err) => {
+    showStatus("❌ Couldn't reach the server (" + err.message + "). Check that API_URL at the top of the script " +
+               "points to your Render address and that the server is running.", "error");
+  });
+</script>
+</body>
+</html>
