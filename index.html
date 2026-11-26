@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find the Portfolio Type That Fits You | 48mart</title>
+<meta name="description" content="Answer six short questions about your goals, timeline and comfort with risk, see an example portfolio mix for your style, then test how it would have behaved using real market history since 2006.">
+<meta name="theme-color" content="#f5f6f8">
+
+<style>
+  /* ---------- Colors (light + dark mode) ---------- */
+  :root {
+    --bg: #ffffff;
+    --panel: #f5f6f8;
+    --card: #ffffff;
+    --text: #1f2430;
+    --muted: #596273;
+    --border: #e1e4ea;
+    --accent: #2f6fed;
+    --accent-text: #ffffff;
+    --accent-soft: #e8f1ff;
+    --good: #12805c;
+    --warn-bg: #fff4e0;
+    --warn-text: #7a4b00;
+    --stock: #2f6fed;
+    --bond: #00a37a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1117;
+      --panel: #161b24;
+      --card: #1b212c;
+      --text: #e8eaf0;
+      --muted: #a2abbb;
+      --border: #2b3340;
+      --accent: #5b8cff;
+      --accent-text: #0e1117;
+      --accent-soft: #14263f;
+      --good: #4cc79a;
+      --warn-bg: #3a2b0e;
+      --warn-text: #ffd48a;
+      --stock: #5b8cff;
+      --bond: #3cc9a0;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+  .hidden { display: none !important; }
+
+  /* ---------- Top bar ---------- */
+  .top { border-bottom: 1px solid var(--border); background: var(--panel); }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 12px; padding-bottom: 12px; }
+  .brand { font-weight: 700; font-size: 1.1rem; color: var(--text); text-decoration: none; }
+  .nav-links { display: flex; gap: 18px; font-size: 0.92rem; }
+  .nav-links a { text-decoration: none; color: var(--muted); }
+  .nav-links a:hover { color: var(--accent); }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 48px 0 28px; text-align: center; }
+  .hero h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); line-height: 1.15; margin: 0 0 14px; }
+  .hero p.lead { font-size: 1.1rem; color: var(--muted); max-width: 640px; margin: 0 auto 22px; }
+  .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .privacy-note { font-size: 0.85rem; color: var(--muted); margin-top: 14px; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-block;
+    font: inherit;
+    font-weight: 600;
+    padding: 11px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .btn:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+  .btn:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- How it works ---------- */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 8px 0 36px; }
+  @media (max-width: 720px) { .steps { grid-template-columns: 1fr; } }
+  .step { background: var(--panel); border-radius: 12px; padding: 16px 18px; }
+  .step .num { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; align-items: center; justify-content: center;
+               background: var(--accent); color: var(--accent-text); font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; }
+  .step h3 { margin: 0 0 4px; font-size: 1rem; }
+  .step p { margin: 0; font-size: 0.92rem; color: var(--muted); }
+
+  /* ---------- Quiz card ---------- */
+  .app-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 26px 26px 22px; margin-bottom: 40px; scroll-margin-top: 16px; }
+  @media (max-width: 560px) { .app-card { padding: 20px 16px 18px; } }
+  .progress-label { font-size: 0.85rem; color: var(--muted); margin: 0 0 6px; }
+  .progress { height: 8px; background: var(--panel); border-radius: 99px; overflow: hidden; margin-bottom: 20px; }
+  .progress > span { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.25s ease; }
+  .q-title { font-size: 1.35rem; line-height: 1.3; margin: 0 0 6px; }
+  .q-title:focus { outline: none; }
+  .q-help { color: var(--muted); font-size: 0.93rem; margin: 0 0 16px; }
+  fieldset { border: 0; padding: 0; margin: 0; }
+  .options { display: grid; gap: 10px; }
+  .option {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 13px 14px; border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer; background: var(--card);
+  }
+  .option:hover { border-color: var(--accent); }
+  .option input { margin-top: 4px; accent-color: var(--accent); width: 18px; height: 18px; flex: none; }
+  .option.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .option:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .q-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 20px; }
+
+  /* ---------- Result ---------- */
+  .result-badge { display: inline-block; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 0.8rem;
+                  letter-spacing: 0.05em; text-transform: uppercase; padding: 4px 10px; border-radius: 99px; margin-bottom: 8px; }
+  .result h2 { font-size: clamp(1.6rem, 4vw, 2.1rem); margin: 0 0 6px; }
+  .result .summary { color: var(--muted); margin: 0 0 18px; }
+  .callout { background: var(--warn-bg); color: var(--warn-text); padding: 12px 14px; border-radius: 10px; margin: 0 0 16px; font-size: 0.93rem; }
+  .meters { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; }
+  @media (max-width: 560px) { .meters { grid-template-columns: 1fr; } }
+  .meter .label { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .meter .track { height: 10px; background: var(--panel); border-radius: 99px; overflow: hidden; }
+  .meter .track > span { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+  .why { font-size: 0.93rem; color: var(--muted); margin: 6px 0 20px; }
+
+  h3.section { font-size: 1.05rem; margin: 22px 0 8px; }
+  .splitbar { display: flex; height: 16px; border-radius: 99px; overflow: hidden; margin: 6px 0 4px; background: var(--panel); }
+  .splitbar .stock { background: var(--stock); }
+  .splitbar .bond { background: var(--bond); }
+  .split-text { font-size: 0.88rem; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+  table.mix { width: 100%; border-collapse: collapse; font-size: 0.93rem; margin-top: 10px; }
+  table.mix th, table.mix td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+  table.mix th:last-child, table.mix td:last-child { text-align: right; }
+  table.mix td.tk { font-weight: 700; white-space: nowrap; }
+  .tag { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); border-radius: 99px; padding: 1px 8px; margin-left: 6px; white-space: nowrap; }
+  .small { font-size: 0.85rem; color: var(--muted); }
+
+  .cta-box { background: var(--panel); border-radius: 12px; padding: 16px 18px; margin-top: 20px; }
+  .amounts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 560px) { .amounts { grid-template-columns: 1fr; } }
+  .amounts label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
+  .amounts input {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); font: inherit;
+  }
+  /* No +/- spinner buttons on number boxes */
+  input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+  .cta-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .cta-hint { color: var(--warn-text); font-size: 0.85rem; margin: 8px 0 0; }
+
+  /* ---------- Profile overview cards ---------- */
+  .section-title { font-size: 1.5rem; margin: 12px 0 6px; }
+  .section-lead { color: var(--muted); margin: 0 0 18px; }
+  .profiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 40px; }
+  .pcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; }
+  .pcard h3 { margin: 0 0 2px; font-size: 1.1rem; }
+  .pcard p.blurb { color: var(--muted); font-size: 0.9rem; margin: 6px 0 10px; }
+  .pcard ul { list-style: none; padding: 0; margin: 8px 0 12px; font-size: 0.9rem; }
+  .pcard li { display: flex; justify-content: space-between; padding: 2px 0; }
+  .pcard .btn { margin-top: auto; text-align: center; padding: 8px 14px; font-size: 0.92rem; }
+  .pcard.match { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+
+  /* ---------- Footer / disclaimer ---------- */
+  .disclaimer { background: var(--panel); border-radius: 12px; padding: 16px 18px; font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
+  .disclaimer strong { color: var(--text); }
+  footer { border-top: 1px solid var(--border); padding: 20px 0 36px; font-size: 0.85rem; color: var(--muted); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .progress > span { transition: none; } }
+</style>
+</head>
+
+<body>
+<header class="top">
+  <div class="wrap nav">
+    <a class="brand" href="index.html">48mart</a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#quiz">Portfolio quiz</a>
+      <a href="#profiles">Portfolio types</a>
+      <a href="simulator.html">Simulator</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero">
+    <h1>Find the portfolio type that fits you</h1>
+    <p class="lead">
+      Answer six short questions about your goals, timeline and comfort with ups and downs.
+      You'll see an example mix of funds for your style, then test how it would have behaved using real market history since 2006.
+    </p>
+    <div class="hero-actions">
+      <button type="button" class="btn primary" id="hero-start">Start the 2-minute quiz</button>
+      <a class="btn" href="simulator.html">Skip to the simulator</a>
+    </div>
+    <p class="privacy-note">No sign-up. Your answers stay in your browser and are never sent anywhere.</p>
+  </section>
+
+  <!-- ===================== HOW IT WORKS ===================== -->
+  <section class="steps" aria-label="How it works">
+    <div class="step"><div class="num">1</div><h3>Answer six questions</h3><p>About your timeline, safety cushion and how you feel about market drops.</p></div>
+    <div class="step"><div class="num">2</div><h3>See your portfolio type</h3><p>Get an example mix of stock and bond funds that matches your answers.</p></div>
+    <div class="step"><div class="num">3</div><h3>Test it on real history</h3><p>Open the simulator with your mix already loaded and see how it would have performed.</p></div>
+  </section>
+
+  <!-- ===================== QUIZ (swapped by JavaScript) ===================== -->
+  <section id="quiz" class="app-card" aria-live="polite" aria-label="Portfolio type quiz">
+    <div id="app"></div>
+  </section>
+
+  <!-- ===================== ALL FIVE TYPES ===================== -->
+  <section id="profiles">
+    <h2 class="section-title">The five example portfolio types</h2>
+    <p class="section-lead">Prefer to browse? Open any mix in the simulator. These are illustrations of common styles, not recommendations.</p>
+    <div class="profiles" id="profile-cards"></div>
+  </section>
+
+  <section class="disclaimer">
+    <strong>Educational use only.</strong> This site does not provide investment, tax or legal advice, and nothing here is a recommendation to buy or sell any investment.
+    The quiz is a simplified guide and cannot know your full situation. Example mixes are hypothetical illustrations. Funds were chosen partly because they have
+    price history back to 2006, so every example covers the 2008 downturn; many investors use other, sometimes lower-cost, funds. Past performance does not guarantee
+    future results, and investments can lose value. Consider speaking with a qualified financial professional before making decisions.
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">48mart.com &middot; <a href="simulator.html">Portfolio simulator</a> &middot; Educational tool only</div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* =====================================================================================
+     SETTINGS
+     ===================================================================================== */
+  // Your API on Render. The quiz only uses it to "wake it up" (free servers sleep) so the simulator opens faster.
+  var API_URL = "https://portfolio-api-v1ek.onrender.com";
+  var DEFAULT_MONTHLY = 360;
+
+  /* =====================================================================================
+     THE FUNDS USED IN THE EXAMPLE MIXES
+     These must exist in your etfs.csv. They were picked because they have price history back to 2006.
+     cls = "stock" or "bond" (used to work out each mix's stock/bond split).
+     ===================================================================================== */
+  var FUNDS = {
+    VTI: { name: "Vanguard Total Stock Market ETF", cls: "stock", tag: "US stocks" },
+    EFA: { name: "iShares MSCI EAFE ETF", cls: "stock", tag: "International stocks" },
+    VWO: { name: "Vanguard FTSE Emerging Markets ETF", cls: "stock", tag: "Emerging markets" },
+    VB:  { name: "Vanguard Small-Cap ETF", cls: "stock", tag: "US small companies" },
+    AGG: { name: "iShares Core U.S. Aggregate Bond ETF", cls: "bond", tag: "US bonds" },
+    TIP: { name: "iShares TIPS Bond ETF", cls: "bond", tag: "Inflation-linked bonds" }
+  };
+
+  /* =====================================================================================
+     THE FIVE PORTFOLIO TYPES
+     max = the quiz score (1 to 5) below which this type applies.  mix = [ticker, percent]; each mix adds to 100.
+     ===================================================================================== */
+  var PROFILES = [
+    { id: "conservative", name: "Conservative", max: 1.8,
+      blurb: "Aims to protect what you have. Mostly bonds with a small slice of stocks. Expect smaller swings and slower long-term growth.",
+      mix: [["AGG", 60], ["TIP", 20], ["VTI", 12], ["EFA", 8]] },
+    { id: "moderately-conservative", name: "Moderately Conservative", max: 2.6,
+      blurb: "Leans toward stability, with enough stocks to help keep pace with rising prices over time.",
+      mix: [["AGG", 45], ["TIP", 15], ["VTI", 25], ["EFA", 15]] },
+    { id: "balanced", name: "Balanced", max: 3.5,
+      blurb: "A middle path and a classic blend: roughly 60% stocks and 40% bonds, mixing growth with a cushion.",
+      mix: [["VTI", 38], ["EFA", 17], ["VWO", 5], ["AGG", 30], ["TIP", 10]] },
+    { id: "growth", name: "Growth", max: 4.3,
+      blurb: "Mostly stocks with a bond cushion. Often paired with long time horizons. Expect noticeable drops in bad years.",
+      mix: [["VTI", 50], ["EFA", 20], ["VWO", 10], ["AGG", 20]] },
+    { id: "aggressive-growth", name: "Aggressive Growth", max: Infinity,
+      blurb: "All stocks, including smaller companies and emerging markets. The most growth potential and the biggest swings.",
+      mix: [["VTI", 55], ["EFA", 25], ["VWO", 10], ["VB", 10]] }
+  ];
+
+  /* =====================================================================================
+     THE QUESTIONS
+     group "situation" = your ability to take risk (time and cushion).
+     group "comfort"   = your willingness to take risk (feelings about drops).
+     weight = how much the question counts inside its group.  score = 1 (cautious) to 5 (bold).
+     ===================================================================================== */
+  var QUESTIONS = [
+    { id: "horizon", group: "situation", weight: 2,
+      title: "When do you expect to start using this money?",
+      help: "A longer timeline gives investments more time to recover from bad years.",
+      options: [
+        { label: "In less than 3 years", score: 1 },
+        { label: "In 3 to 5 years", score: 2 },
+        { label: "In 5 to 10 years", score: 3 },
+        { label: "In 10 to 20 years", score: 4 },
+        { label: "In more than 20 years", score: 5 } ] },
+    { id: "cushion", group: "situation", weight: 1,
+      title: "If your income stopped tomorrow, how long could you cover your bills without touching these investments?",
+      help: "A cash cushion means you won't be forced to sell at a bad time.",
+      options: [
+        { label: "Less than 1 month", score: 1 },
+        { label: "1 to 3 months", score: 2 },
+        { label: "3 to 6 months", score: 3 },
+        { label: "6 to 12 months", score: 4 },
+        { label: "More than a year", score: 5 } ] },
+    { id: "goal", group: "comfort", weight: 1,
+      title: "Which statement sounds most like you?",
+      help: "Pick the one you'd agree with most, even if none is perfect.",
+      options: [
+        { label: "Protecting my money matters more than growing it.", score: 1 },
+        { label: "I want steady, modest growth with few surprises.", score: 2 },
+        { label: "I want a balance of growth and safety.", score: 3 },
+        { label: "I want strong long-term growth and can accept some big drops.", score: 4 },
+        { label: "I want the most growth possible and can live with big swings.", score: 5 } ] },
+    { id: "drop", group: "comfort", weight: 2,
+      title: "Imagine your $10,000 portfolio fell to $7,000 over six months. What would you most likely do?",
+      help: "Be honest. How you'd act in a real downturn is the best guide to your comfort with risk.",
+      options: [
+        { label: "Sell everything to stop the losses", score: 1 },
+        { label: "Sell some to feel safer", score: 2 },
+        { label: "Do nothing and wait for a recovery", score: 3 },
+        { label: "Keep investing the same amount each month", score: 4 },
+        { label: "Invest extra while prices are lower", score: 5 } ] },
+    { id: "swings", group: "comfort", weight: 1.5,
+      title: "Which range of yearly results (your best year and your worst year) could you live with?",
+      help: "These ranges are hypothetical and only meant to compare your comfort levels.",
+      options: [
+        { label: "Worst year \u22123%, best year +5%", score: 1 },
+        { label: "Worst year \u22128%, best year +10%", score: 2 },
+        { label: "Worst year \u221215%, best year +20%", score: 3 },
+        { label: "Worst year \u221225%, best year +30%", score: 4 },
+        { label: "Worst year \u221235%, best year +40% or more", score: 5 } ] },
+    { id: "experience", group: "comfort", weight: 0.5,
+      title: "How much investing experience do you have?",
+      help: "There's no wrong answer. This counts the least toward your result.",
+      options: [
+        { label: "None, I'm just starting", score: 1 },
+        { label: "A little, such as a workplace retirement plan", score: 2 },
+        { label: "Some, I own funds or stocks", score: 3 },
+        { label: "A lot, and I've stayed invested through a big market drop", score: 4 } ] }
+  ];
+
+  /* =====================================================================================
+     SCORING
+     1) Average the answers inside each group (weighted).
+     2) Use the LOWER of the two group scores, so a short timeline or thin cushion can't be
+        overridden by a bold attitude (and a nervous attitude isn't overridden by a long timeline).
+     3) If the money is needed in under 3 years, cap the result at Conservative.
+     4) Match the final score (1 to 5) to one of the five types.
+     ===================================================================================== */
+  function groupScore(group, answers) {
+    var total = 0, weights = 0;
+    QUESTIONS.forEach(function (q) {
+      if (q.group === group && answers[q.id] !== undefined) { total += answers[q.id] * q.weight; weights += q.weight; }
+    });
+    return weights ? total / weights : 0;
+  }
+
+  function scoreQuiz(answers) {
+    var comfort = groupScore("comfort", answers);
+    var situation = groupScore("situation", answers);
+    var raw = Math.min(comfort, situation);
+    if (answers.horizon === 1) raw = Math.min(raw, 1.7);
+    var profile = PROFILES.filter(function (p) { return raw < p.max; })[0];
+    return { comfort: comfort, situation: situation, raw: raw, profile: profile };
+  }
+
+  function stockShare(profile) {
+    return profile.mix.reduce(function (sum, m) { return sum + (FUNDS[m[0]].cls === "stock" ? m[1] : 0); }, 0);
+  }
+
+  /* =====================================================================================
+     SMALL HELPERS
+     ===================================================================================== */
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Build an element and set its TEXT (never raw HTML).
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
+  // Link into the simulator with a mix pre-loaded. The simulator checks every value again before using it.
+  function simulatorLink(profile, monthly, initial) {
+    var params = new URLSearchParams({
+      funds: profile.mix.map(function (m) { return m[0] + ":" + m[1]; }).join(","),
+      monthly: String(monthly),
+      initial: String(initial),
+      profile: profile.name
+    });
+    return "simulator.html?" + params.toString();
+  }
+
+  function levelWord(score) {
+    return score < 2 ? "Lower" : score < 3.4 ? "Moderate" : score < 4.4 ? "Higher" : "Highest";
+  }
+
+  function splitBar(profile) {
+    var stocks = stockShare(profile), bonds = 100 - stocks;
+    var wrap = el("div");
+    var bar = el("div", "splitbar");
+    bar.setAttribute("role", "img");
+    bar.setAttribute("aria-label", stocks + " percent stocks, " + bonds + " percent bonds");
+    var s = el("span", "stock"); s.style.width = stocks + "%";
+    var b = el("span", "bond"); b.style.width = bonds + "%";
+    bar.append(s, b);
+    var text = el("div", "split-text");
+    var t1 = el("span"); var d1 = el("span", "dot"); d1.style.background = "var(--stock)"; t1.append(d1, document.createTextNode("About " + stocks + "% stocks"));
+    var t2 = el("span"); var d2 = el("span", "dot"); d2.style.background = "var(--bond)"; t2.append(d2, document.createTextNode("About " + bonds + "% bonds"));
+    text.append(t1, t2);
+    wrap.append(bar, text);
+    return wrap;
+  }
+
+  var wokeApi = false;
+  function wakeApi() {            // best effort and silent; a sleeping free server takes up to a minute to start
+    if (wokeApi) return;
+    wokeApi = true;
+    try { fetch(API_URL + "/health", { mode: "no-cors" }).catch(function () {}); } catch (e) { /* ignore */ }
+  }
+
+  /* =====================================================================================
+     QUIZ SCREENS: intro -> questions -> result
+     ===================================================================================== */
+  var app = $("app");
+  var step = 0;
+  var answers = {};          // question id -> score chosen
+  var lastResult = null;
+
+  function scrollToQuiz() { $("quiz").scrollIntoView({ block: "start" }); }
+
+  function renderIntro() {
+    app.replaceChildren();
+    var h = el("h2", "q-title", "Ready? It takes about two minutes.");
+    h.tabIndex = -1;
+    app.append(
+      h,
+      el("p", "q-help", "Six questions, no right or wrong answers. At the end you'll get an example portfolio mix and can open it in the simulator."),
+      (function () { var b = el("button", "btn primary", "Start the quiz"); b.type = "button"; b.addEventListener("click", startQuiz); return b; })()
+    );
+  }
+
+  function startQuiz() {
+    wakeApi();
+    step = 0;
+    answers = {};
+    renderQuestion();
+    scrollToQuiz();
+  }
+
+  function renderQuestion() {
+    var q = QUESTIONS[step];
+    app.replaceChildren();
+
+    app.appendChild(el("p", "progress-label", "Question " + (step + 1) + " of " + QUESTIONS.length));
+    var progress = el("div", "progress");
+    progress.setAttribute("role", "progressbar");
+    progress.setAttribute("aria-valuemin", "0");
+    progress.setAttribute("aria-valuemax", String(QUESTIONS.length));
+    progress.setAttribute("aria-valuenow", String(step + 1));
+    progress.setAttribute("aria-label", "Quiz progress");
+    var fill = el("span"); fill.style.width = (((step + 1) / QUESTIONS.length) * 100) + "%";
+    progress.appendChild(fill);
+    app.appendChild(progress);
+
+    var fieldset = document.createElement("fieldset");
+    var legend = el("legend", "sr-only", q.title);
+    fieldset.appendChild(legend);
+
+    var title = el("h2", "q-title", q.title);
+    title.tabIndex = -1;
+    title.id = "q-title";
+    app.append(title, el("p", "q-help", q.help));
+
+    var list = el("div", "options");
+    q.options.forEach(function (opt, i) {
+      var label = el("label", "option");
+      var input = document.createElement("input");
+      input.type = "radio";
+      input.name = "answer";
+      input.value = String(opt.score);
+      input.id = "opt-" + i;
+      if (answers[q.id] === opt.score) { input.checked = true; label.classList.add("selected"); }
+      input.addEventListener("change", function () {
+        answers[q.id] = opt.score;
+        list.querySelectorAll(".option").forEach(function (n) { n.classList.remove("selected"); });
+        label.classList.add("selected");
+        next.disabled = false;
+      });
+      label.append(input, el("span", null, opt.label));
+      list.appendChild(label);
+    });
+    fieldset.appendChild(list);
+    app.appendChild(fieldset);
+
+    var nav = el("div", "q-nav");
+    var back = el("button", "btn", step === 0 ? "Cancel" : "Back");
+    back.type = "button";
+    back.addEventListener("click", function () {
+      if (step === 0) { renderIntro(); return; }
+      step -= 1; renderQuestion();
+    });
+    var next = el("button", "btn primary", step === QUESTIONS.length - 1 ? "See my result" : "Next");
+    next.type = "button";
+    next.id = "next-btn";
+    next.disabled = answers[q.id] === undefined;      // can't continue until something is chosen
+    next.addEventListener("click", function () {
+      if (answers[q.id] === undefined) return;
+      if (step === QUESTIONS.length - 1) { renderResult(); } else { step += 1; renderQuestion(); }
+    });
+    nav.append(back, next);
+    app.appendChild(nav);
+
+    title.focus({ preventScroll: true });             // lets screen readers announce the new question
+  }
+
+  function renderResult() {
+    var result = scoreQuiz(answers);
+    lastResult = result;
+    var profile = result.profile;
+    app.replaceChildren();
+
+    var box = el("div", "result");
+    box.appendChild(el("span", "result-badge", "Your example portfolio type"));
+    var h = el("h2", null, profile.name);
+    h.tabIndex = -1; h.id = "result-title";
+    box.appendChild(h);
+    box.appendChild(el("p", "summary", profile.blurb));
+
+    if (answers.horizon === 1) {
+      box.appendChild(el("div", "callout",
+        "Money you'll need within about 3 years is usually kept in safer places than the stock market, because there may not be time to recover from a drop. " +
+        "We've kept your result on the cautious side."));
+    }
+
+    // The two scores that produced the result
+    var meters = el("div", "meters");
+    [["Your comfort with ups and downs", result.comfort], ["Your timeline and financial cushion", result.situation]].forEach(function (m) {
+      var meter = el("div", "meter");
+      var label = el("div", "label"); label.append(el("span", null, m[0]), el("span", null, levelWord(m[1])));
+      var track = el("div", "track"); var fill = el("span"); fill.style.width = (((m[1] - 1) / 4) * 100) + "%"; track.appendChild(fill);
+      track.setAttribute("role", "img"); track.setAttribute("aria-label", m[0] + ": " + levelWord(m[1]));
+      meter.append(label, track);
+      meters.appendChild(meter);
+    });
+    box.appendChild(meters);
+
+    var why;
+    if (result.situation < result.comfort - 0.3) why = "Your timeline or cushion points to a more cautious mix than your comfort level, so your result follows the more cautious of the two.";
+    else if (result.comfort < result.situation - 0.3) why = "Your situation could support more risk, but your answers show a more cautious comfort level with market drops, so your result follows your comfort level.";
+    else why = "Your comfort level and your situation point to the same place.";
+    box.appendChild(el("p", "why", why + " We use the lower of the two scores."));
+
+    // The example mix
+    box.appendChild(el("h3", "section", "An example mix for this type"));
+    box.appendChild(splitBar(profile));
+
+    var table = document.createElement("table");
+    table.className = "mix";
+    var cap = el("caption", "sr-only", "Example funds and percentages for the " + profile.name + " portfolio type");
+    table.appendChild(cap);
+    var thead = document.createElement("thead"); var hr = document.createElement("tr");
+    ["Fund", "Percent"].forEach(function (t) { var th = el("th", null, t); th.scope = "col"; hr.appendChild(th); });
+    thead.appendChild(hr); table.appendChild(thead);
+    var tbody = document.createElement("tbody");
+    profile.mix.forEach(function (m) {
+      var tr = document.createElement("tr");
+      var td1 = document.createElement("td");
+      td1.append(el("span", "tk", m[0]), document.createTextNode(" " + FUNDS[m[0]].name), el("span", "tag", FUNDS[m[0]].tag));
+      tr.append(td1, el("td", null, m[1] + "%"));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    box.appendChild(table);
+    box.appendChild(el("p", "small", "This is an illustration of a common style, not a recommendation to buy these funds."));
+
+    // Call to action: open in the simulator
+    var cta = el("div", "cta-box");
+    cta.appendChild(el("strong", null, "See how this mix would have performed since 2006"));
+    cta.appendChild(el("p", "small", "The simulator uses real monthly fund history, including the 2008 downturn. Choose amounts to test (you can change them there too)."));
+
+    var amounts = el("div", "amounts");
+    var mWrap = el("div"); var mLab = el("label", null, "Monthly amount ($)"); mLab.htmlFor = "amt-monthly";
+    var mIn = document.createElement("input"); mIn.type = "number"; mIn.id = "amt-monthly"; mIn.min = "0"; mIn.max = "100000"; mIn.step = "any"; mIn.value = String(DEFAULT_MONTHLY); mIn.inputMode = "decimal";
+    mWrap.append(mLab, mIn);
+    var iWrap = el("div"); var iLab = el("label", null, "Starting amount ($, optional)"); iLab.htmlFor = "amt-initial";
+    var iIn = document.createElement("input"); iIn.type = "number"; iIn.id = "amt-initial"; iIn.min = "0"; iIn.max = "10000000"; iIn.step = "any"; iIn.value = "0"; iIn.inputMode = "decimal";
+    iWrap.append(iLab, iIn);
+    amounts.append(mWrap, iWrap);
+    cta.appendChild(amounts);
+
+    var row = el("div", "cta-row");
+    var go = el("a", "btn primary", "Open in the simulator \u2192"); go.id = "cta-link";
+    var retake = el("button", "btn", "Retake the quiz"); retake.type = "button"; retake.addEventListener("click", startQuiz);
+    row.append(go, retake);
+    cta.appendChild(row);
+    var hint = el("p", "cta-hint"); hint.id = "cta-hint"; hint.setAttribute("role", "status");
+    cta.appendChild(hint);
+    box.appendChild(cta);
+    app.appendChild(box);
+
+    function clamp(v, max) { var n = parseFloat(v); return isFinite(n) ? Math.min(Math.max(n, 0), max) : 0; }
+    function refreshLink() {
+      var monthly = clamp(mIn.value, 100000), initial = clamp(iIn.value, 10000000);
+      if (monthly + initial <= 0) {
+        go.removeAttribute("href"); go.setAttribute("aria-disabled", "true");
+        hint.textContent = "Enter at least $1 in one of the boxes to continue.";
+      } else {
+        go.href = simulatorLink(profile, monthly, initial); go.removeAttribute("aria-disabled");
+        hint.textContent = "";
+      }
+    }
+    mIn.addEventListener("input", refreshLink);
+    iIn.addEventListener("input", refreshLink);
+    refreshLink();
+
+    highlightProfile(profile.id);
+    h.focus({ preventScroll: true });
+    scrollToQuiz();
+  }
+
+  /* =====================================================================================
+     OVERVIEW CARDS FOR ALL FIVE TYPES
+     ===================================================================================== */
+  function renderProfileCards() {
+    var holder = $("profile-cards");
+    holder.replaceChildren();
+    PROFILES.forEach(function (p) {
+      var card = el("article", "pcard");
+      card.id = "profile-" + p.id;
+      card.appendChild(el("h3", null, p.name));
+      card.appendChild(splitBar(p));
+      card.appendChild(el("p", "blurb", p.blurb));
+      var ul = document.createElement("ul");
+      p.mix.forEach(function (m) {
+        var li = document.createElement("li");
+        li.append(el("span", null, m[0] + " \u00B7 " + FUNDS[m[0]].tag), el("strong", null, m[1] + "%"));
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+      var link = el("a", "btn", "Try this mix in the simulator");
+      link.href = simulatorLink(p, DEFAULT_MONTHLY, 0);
+      card.appendChild(link);
+      holder.appendChild(card);
+    });
+  }
+
+  function highlightProfile(id) {
+    document.querySelectorAll(".pcard").forEach(function (c) { c.classList.toggle("match", c.id === "profile-" + id); });
+  }
+
+  /* =====================================================================================
+     SELF-CHECK + START-UP
+     ===================================================================================== */
+  PROFILES.forEach(function (p) {
+    var sum = p.mix.reduce(function (s, m) { return s + m[1]; }, 0);
+    if (sum !== 100) console.error("Profile " + p.name + " adds up to " + sum + "%, not 100%.");
+    p.mix.forEach(function (m) { if (!FUNDS[m[0]]) console.error("Unknown fund " + m[0] + " in " + p.name); });
+  });
+
+  renderProfileCards();
+  renderIntro();
+  $("hero-start").addEventListener("click", startQuiz);
+
+  // Exposed only so the scoring can be tested from the browser console: window.__quiz.score({horizon:5, ...})
+  window.__quiz = { score: scoreQuiz, profiles: PROFILES, questions: QUESTIONS };
+})();
+</script>
+</body>
+</html>
